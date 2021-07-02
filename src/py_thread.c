@@ -85,6 +85,7 @@ py_frame_t * _stack = NULL;
 
 #define _code__get_filename(self, pid, dest)    _get_string_from_raddr(pid, *((void **) ((void *) self + py_v->py_code.o_filename)), dest)
 #define _code__get_name(self, pid, dest)        _get_string_from_raddr(pid, *((void **) ((void *) self + py_v->py_code.o_name)), dest)
+#define _code__get_qualname(self, pid, dest)    _get_string_from_raddr(pid, *((void **) ((void *) self + py_v->py_code.o_qualname)), dest)
 
 #define _code__get_lnotab(self, pid, buf)       _get_bytes_from_raddr(pid, *((void **) ((void *) self + py_v->py_code.o_lnotab)), buf)
 
@@ -122,6 +123,7 @@ _get_string_from_raddr(pid_t pid, void * raddr, char * buffer) {
   case 3:
     if (fail(copy_datatype(pid, raddr, unicode))) {
       log_ie("Cannot read remote PyUnicodeObject3");
+      log_d("remote address: %p", raddr);
       FAIL;
     }
     if (unicode._base._base.state.kind != 1) {
@@ -220,7 +222,7 @@ static inline int
 _py_code__fill_from_raddr(py_code_t * self, raddr_t * raddr, int lasti) {
   PyCodeObject  code;
   unsigned char lnotab[MAXLEN];
-  int           len;
+  int           len = 0;
 
   if (self == NULL)
     FAIL;
@@ -235,17 +237,27 @@ _py_code__fill_from_raddr(py_code_t * self, raddr_t * raddr, int lasti) {
     FAIL;
   }
 
-  if (fail(_code__get_name(&code, raddr->pid, self->scope))) {
-    log_ie("Cannot get scope name from PyCodeObject");
-    FAIL;
+  self->scope[0] = '\0';
+  if (py_v->major == 3 && py_v->minor >= 11) {
+    if (fail(_code__get_qualname(&code, raddr->pid, self->scope))) {
+      log_d("Cannot get qualname from PyCodeObject");
+      // FAIL;
+    }
   }
 
-  else if ((len = _code__get_lnotab(&code, raddr->pid, lnotab)) < 0 || len % 2) {
+  if (self->scope[0] == '\0') {
+    if (fail(_code__get_name(&code, raddr->pid, self->scope))) {
+      log_ie("Cannot get scope name from PyCodeObject");
+      FAIL;
+    }
+  }
+
+  if ((len = _code__get_lnotab(&code, raddr->pid, lnotab)) < 0 || len % 2) {
     log_ie("Cannot get line number from PyCodeObject");
     FAIL;
   }
 
-  int lineno = V_FIELD(unsigned int, code, py_code, o_firstlineno);
+  unsigned int lineno = V_FIELD(unsigned int, code, py_code, o_firstlineno);
 
   if (py_v->major == 3 && py_v->minor >= 10) { // Python >=3.10
     lasti <<= 1;
@@ -300,10 +312,21 @@ _py_frame__fill_from_raddr(py_frame_t * self, raddr_t * raddr) {
     FAIL;
   }
 
-  raddr_t py_code_raddr = {
-    .pid  = raddr->pid,
-    .addr = V_FIELD(void *, frame, py_frame, o_code)
-  };
+  raddr_t py_code_raddr = {raddr->pid, NULL};
+  if (py_v->major == 3 && py_v->minor >= 11) {
+    /* The code object is part of the frame specials */
+    void ** valuestack_addr = V_FIELD(void **, frame, py_frame, o_valuestack);
+    void * code_addr = valuestack_addr - 1; // TODO: Declare offset in python.h
+    // TODO: Handle failed
+    if (fail(copy_datatype(raddr->pid, code_addr, py_code_raddr.addr))) {
+      log_ie("Cannot get PyCodeObject from frame specials");
+      SUCCESS;
+    }
+  }
+  else {
+    py_code_raddr.addr = V_FIELD(void *, frame, py_frame, o_code);
+  }
+
   if (_py_code__fill_from_raddr(
     &(self->code), &py_code_raddr, V_FIELD(int, frame, py_frame, o_lasti)
   )) {

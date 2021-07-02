@@ -62,7 +62,7 @@
  * @param  dt    the data structure as a local variable
  * @return       zero on success, otherwise non-zero.
  */
-#define copy_from_raddr(raddr, dt) copy_memory((raddr)->pid, (raddr)->addr, sizeof(dt), &dt)
+#define copy_from_raddr(raddr, dt) copy_memory((raddr)->pid, (raddr)->addr, sizeof(dt), &(dt))
 
 
 /**
@@ -71,7 +71,7 @@
  * @param  dt    the data structure as a local variable
  * @return       zero on success, otherwise non-zero.
  */
-#define copy_from_raddr_v(raddr, dt, n) copy_memory(raddr->pid, raddr->addr, n, &dt)
+#define copy_from_raddr_v(raddr, dt, n) copy_memory(raddr->pid, raddr->addr, n, &(dt))
 
 
 /**
@@ -82,7 +82,7 @@
  * @param  dt   the data structure as a local variable.
  * @return      zero on success, otherwise non-zero.
  */
-#define copy_datatype(pid, addr, dt) copy_memory(pid, addr, sizeof(dt), &dt)
+#define copy_datatype(pid, addr, dt) copy_memory(pid, addr, sizeof(dt), &(dt))
 
 
 typedef struct {

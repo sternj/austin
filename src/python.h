@@ -83,6 +83,8 @@ typedef struct {
     PyObject *co_name;		/* string (name, for reference) */
     int co_firstlineno;		/* first source line number */
     PyObject *co_lnotab;	/* string (encoding addr<->lineno mapping) */
+
+    PyObject *co_qualname;      /* DOES NOT EXIST ON THIS VERSION! */
 } PyCodeObject2;
 
 typedef struct {
@@ -103,6 +105,8 @@ typedef struct {
     PyObject *co_name;		/* unicode (name, for reference) */
     int co_firstlineno;		/* first source line number */
     PyObject *co_lnotab;	/* string (encoding addr<->lineno mapping) */
+
+    PyObject *co_qualname;      /* DOES NOT EXIST ON THIS VERSION! */
 } PyCodeObject3_3;
 
 typedef struct {
@@ -123,6 +127,8 @@ typedef struct {
     PyObject *co_filename;	/* unicode (where it was loaded from) */
     PyObject *co_name;		/* unicode (name, for reference) */
     PyObject *co_lnotab;	/* string (encoding addr<->lineno mapping) */
+
+    PyObject *co_qualname;      /* DOES NOT EXIST ON THIS VERSION! */
 } PyCodeObject3_6;
 
 typedef struct {
@@ -144,13 +150,47 @@ typedef struct {
     PyObject *co_filename;      /* unicode (where it was loaded from) */
     PyObject *co_name;          /* unicode (name, for reference) */
     PyObject *co_lnotab;        /* string (encoding addr<->lineno mapping) */
+
+    PyObject *co_qualname;      /* DOES NOT EXIST ON THIS VERSION! */
 } PyCodeObject3_8;
+
+
+typedef uint16_t _Py_CODEUNIT;
+
+typedef struct {
+  PyObject_HEAD
+
+  PyObject *co_consts;        /* list (constants used) */
+  PyObject *co_names;         /* list of strings (names used) */
+  _Py_CODEUNIT *co_firstinstr; /* Pointer to first instruction, used for quickening.
+                                  Unlike the other "hot" fields, this one is
+                                  actually derived from co_code. */
+  PyObject *co_exceptiontable; /* Byte string encoding exception handling table */
+  int co_flags;               /* CO_..., see below */
+  int co_warmup;              /* Warmup counter for quickening */
+
+  // The rest are not so impactful on performance.
+  int co_argcount;            /* #arguments, except *args */
+  int co_posonlyargcount;     /* #positional only arguments */
+  int co_kwonlyargcount;      /* #keyword only arguments */
+  int co_stacksize;           /* #entries needed for evaluation stack */
+  int co_firstlineno;         /* first source line number */
+  PyObject *co_code;          /* instruction opcodes */
+  PyObject *co_localsplusnames;  /* tuple mapping offsets to names */
+  PyObject *co_localspluskinds; /* Bytes mapping to local kinds (one byte per variable) */
+  PyObject *co_filename;      /* unicode (where it was loaded from) */
+  PyObject *co_name;          /* unicode (name, for reference) */
+  PyObject *co_qualname;      /* unicode (qualname, only for code objects created by the compiler) */
+  PyObject *co_lnotab;       /* string (encoding addr<->lineno mapping) See
+                                 Objects/lnotab_notes.txt for details. NOW CALLED co_linetable! */
+} PyCodeObject3_11;
 
 typedef union {
   PyCodeObject2   v2;
   PyCodeObject3_3 v3_3;
   PyCodeObject3_6 v3_6;
   PyCodeObject3_8 v3_8;
+  PyCodeObject3_11 v3_11;
 } PyCodeObject;
 
 
@@ -212,10 +252,29 @@ typedef struct _frame3_10 {
     int f_lineno;               /* Current line number. Only valid if non-zero */
 } PyFrameObject3_10;
 
+
+typedef signed char PyFrameState;
+
+typedef struct _frame3_11 {
+    PyObject_HEAD
+    struct _frame *f_back;      /* previous frame, or NULL */
+    PyObject **f_valuestack;    /* points after the last local  (see https://github.com/python/cpython/pull/26771/files) */
+    PyObject *f_trace;          /* Trace function */
+    /* Borrowed reference to a generator, or NULL */
+    PyObject *f_gen;
+    int f_stackdepth;           /* Depth of value stack */
+    int f_lasti;                /* Last instruction if called */
+    int f_lineno;               /* Current line number. Only valid if non-zero */
+    PyFrameState f_state;       /* What state the frame is in */
+
+    PyObject *f_code;           /* THIS HAS BEEN REMOVED! */
+} PyFrameObject3_11;
+
 typedef union {
   PyFrameObject2    v2;
   PyFrameObject3_7  v3_7;
   PyFrameObject3_10 v3_10;
+  PyFrameObject3_11 v3_11;
 } PyFrameObject;
 
 // ---- pystate.h -------------------------------------------------------------

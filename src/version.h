@@ -70,6 +70,7 @@ typedef struct {
   offset_t o_name;
   offset_t o_lnotab;
   offset_t o_firstlineno;
+  offset_t o_qualname;
 } py_code_v;
 
 
@@ -80,6 +81,7 @@ typedef struct {
   offset_t o_code;
   offset_t o_lasti;
   offset_t o_lineno;
+  offset_t o_valuestack;
 } py_frame_v;
 
 

@@ -29,14 +29,15 @@
 
 #define UNSUPPORTED_VERSION             log_w("Unsupported Python version detected. Austin might not work as expected.")
 
-#define LATEST_VERSION                  (&python_v3_10)
+#define LATEST_VERSION                  (&python_v3_11)
 
 #define PY_CODE(s) {                    \
   sizeof(s),                            \
   offsetof(s, co_filename),             \
   offsetof(s, co_name),                 \
   offsetof(s, co_lnotab),               \
-  offsetof(s, co_firstlineno)           \
+  offsetof(s, co_firstlineno),          \
+  offsetof(s, co_qualname),             \
 }
 
 #define PY_FRAME(s) {                   \
@@ -45,6 +46,7 @@
   offsetof(s, f_code),                  \
   offsetof(s, f_lasti),                 \
   offsetof(s, f_lineno),                \
+  offsetof(s, f_valuestack),            \
 }
 
 /* Hack. Python 3.3 and below don't have the prev field */
@@ -138,11 +140,22 @@ python_v python_v3_10 = {
   PY_RUNTIME  (_PyRuntimeState3_8)
 };
 
+
+// ---- Python 3.11 -----------------------------------------------------------
+
+python_v python_v3_11 = {
+  PY_CODE     (PyCodeObject3_11),
+  PY_FRAME    (PyFrameObject3_11),
+  PY_THREAD   (PyThreadState3_8),
+  PY_RUNTIME  (_PyRuntimeState3_8)
+};
+
 // ----------------------------------------------------------------------------
 void
 set_version(int version) {
   int minor = (version >> 8)  & 0xFF;
   int major = (version >> 16) & 0xFF;
+  log_d ("Setting global Python version %d.%d", major, minor);
 
   switch (major) {
 
@@ -194,6 +207,9 @@ set_version(int version) {
 
     // 3.10
     case 10: py_v = &python_v3_10; break;
+
+    // 3.11
+    case 11: py_v = &python_v3_11; break;
 
     default: py_v = LATEST_VERSION;
       UNSUPPORTED_VERSION;

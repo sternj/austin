@@ -22,17 +22,28 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import threading
+from functools import cache
 
 
 class Foo:
-    def keep_cpu_busy(self):
+    @cache
+    def on_cpu(self, n):
         a = []
-        for i in range(1_000_000):
+        for i in range(n):
+            a.append(i)
+
+
+class Bar:
+    @cache
+    def on_cpu(self, n):
+        a = []
+        for i in range(n):
             a.append(i)
 
 
 if __name__ == "__main__":
     f = Foo()
-    threading.Thread(target=f.keep_cpu_busy).start()
-    f.keep_cpu_busy()
+    b = Bar()
+
+    f.on_cpu(1_000_000)
+    b.on_cpu(5_000_000)
