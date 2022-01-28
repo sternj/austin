@@ -43,7 +43,7 @@
 #if defined(PL_LINUX) || defined(PL_MACOS)
   #define PL_UNIX
 
-  #define NULL_DEVICE "/dev/null"
+  #define NULL_DEVICE "/tmp/timestamp_file"
 #endif
 
 #endif

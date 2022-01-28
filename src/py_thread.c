@@ -23,6 +23,7 @@
 #define PY_THREAD_C
 
 #include <string.h>
+#include <time.h>
 
 #include "argparse.h"
 #include "error.h"
@@ -492,11 +493,13 @@ py_thread__print_collapsed_stack(py_thread_t * self, ctime_t time_delta, ssize_t
     fprintf(pargs.output_file, ";:GC:");
     stats_gc_time(time_delta);
   }
-
+  struct timespec ts;
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  time_t nanos = ts.tv_sec * 1000000000 + ts.tv_nsec;
   // Finish off sample with the metric(s)
   if (pargs.full) {
-    fprintf(pargs.output_file, " " TIME_METRIC METRIC_SEP IDLE_METRIC METRIC_SEP MEM_METRIC "\n",
-      time_delta, !!is_idle, mem_delta
+    fprintf(pargs.output_file, " " TIME_METRIC METRIC_SEP IDLE_METRIC METRIC_SEP MEM_METRIC METRIC_SEP TIME_METRIC"\n",
+      time_delta, !!is_idle, mem_delta, nanos
     );
   }
   else {
